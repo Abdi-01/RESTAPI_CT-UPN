@@ -3,6 +3,8 @@ const http = require('http')
 // Fs(File System) digunakan untuk membaca data dari sebuah file 
 const fs = require('fs')
 
+const url = require('url')
+
 const server = http.createServer((req, res) => {
 
     const headers = {
@@ -13,7 +15,7 @@ const server = http.createServer((req, res) => {
 
     // Apapun method yg dilakukan, akan selalu mengambil data dari db.json
     let products = fs.readFileSync('./Data/db.json')
-   if(req.method === 'GET'){
+    if(req.method === 'GET'){
     res.writeHead(200, 'Get Products Success!', headers)
     res.end(products)
    }
@@ -36,6 +38,45 @@ const server = http.createServer((req, res) => {
         res.end(fs.readFileSync('./Data/db.json'))
     })
    }
+
+   if(req.method === 'PATCH' && req.url.includes('?')){
+        let getQuery = url.parse(req.url, true).query
+        getQuery = parseInt(getQuery.id)
+
+        let body = []
+        products = JSON.parse(products)
+
+        req.on('data', (data) => {
+            body.push(data)
+            body = JSON.parse(body)
+            
+            for(let i=0; i<products.length; i++){
+                if(products[i].id === getQuery){
+                    products[i].name = body.name
+                }
+            }
+
+            fs.writeFileSync('./Data/db.json', JSON.stringify(products))
+            res.writeHead(201, 'Update Product Success!', headers)
+            res.end(fs.readFileSync('./Data/db.json'))
+        })
+    }
+
+    if(req.method === 'DELETE' && req.url.includes('?')){
+        let getQuery = url.parse(req.url, true).query
+        getQuery = parseInt(getQuery.id)
+        console.log(getQuery)
+
+        products = JSON.parse(products)
+
+        let idx = products.findIndex(value => value.id === getQuery)
+        products.splice(idx, 1)
+        console.log(products)
+
+        fs.writeFileSync('./Data/db.json', JSON.stringify(products))
+        res.writeHead(201, 'Delete Product Success!', headers)
+        res.end(fs.readFileSync('./Data/db.json'))
+    }
 })
 
 let PORT = 5000 
