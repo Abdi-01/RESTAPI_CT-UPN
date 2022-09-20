@@ -31,5 +31,16 @@ module.exports = {
 
         fs.writeFileSync('./Data/db.json', JSON.stringify(products))
         res.status(200).send(JSON.parse(fs.readFileSync('./Data/db.json')))
+    },
+
+    deleteProducts: (req, res) => {
+        let id = parseInt(req.params.id)
+        let products = JSON.parse(fs.readFileSync('./Data/db.json'))
+
+        let idx = products.findIndex(value => value.id === id)
+        products.splice(idx, 1)
+
+        fs.writeFileSync('./Data/db.json', JSON.stringify(products))
+        res.status(200).send(JSON.parse(fs.readFileSync('./Data/db.json')))
     }
 }
