@@ -1,32 +1,37 @@
-const db = require('./../Connection/Conn')
+const db = require('./../models/index')
+const users = db.users
+const useraddress = db.useraddress
 
-const queryGetUsers = async() => {
+const { sequelize } = require('./../models')
+
+const queryPostUsers = async(req) => {
+    const t = await sequelize.transaction() 
     try {
-        let getUsers = await db.query('SELECT * FROM users')
+        let {username, email, password, consignee, address} = req.body
 
-        return { error: false, message: 'Success', isData: true, data: getUsers.rows }
+        let postUsers = await users.create({username, email, password}, {transaction: t})
+        let userId = postUsers.dataValues.id
+        let postUserAddress = await useraddress.create({consignee, address, userId},  {transaction: t})
+        
+        await t.commit()
+        return { error: false, message: 'Success', isData: false, data: null }     
     } catch (error) {
+        await t.rollback()
         return { error: true, message: error.message, isData: false, data: null }
     }
 }
 
-const queryPostUsers = async(req) => {
+const queryGetUsers = async(req) => {
     try {
-        await db.query('BEGIN')
-        let {id, username, email, password, todoId, todo} = req.body 
+        let getUser = await users.findAll({ where: { username: req.body.username, password: req.body.password } })
         
-        let insertUsers = await db.query('INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4) RETURNING id', [id, username, email, password])
-        // id = todoId
-        let insertTodos = await db.query('INSERT INTO todos (id, todo, users_id) VALUES ($1, $2, $3)', [todoId, todo, insertUsers.rows[0].id])
-
-        await db.query('COMMIT')
-        return { error: false, message: 'Success', isData: false, data: null }
+        if(getUser.length === 1) return { error: false, message: 'Login Success', isData: false, data: null }
+        return { error: true, message: 'Login Failed', isData: false, data: null }
     } catch (error) {
-        await db.query('ROLLBACK')
         return { error: true, message: error.message, isData: false, data: null }
     }
 }
 
 module.exports = {
-    queryGetUsers, queryPostUsers
+    queryPostUsers, queryGetUsers
 }
